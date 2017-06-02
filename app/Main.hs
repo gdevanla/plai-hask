@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveFunctor #-}
 module Main where
 
+import Control.Monad
 import Text.Parsec.Prim
 import Text.Parsec.Token
 import Text.Parsec
@@ -43,9 +44,9 @@ allowedSymbolsInFirstElement =  do
   c <- foldl1 (<|>) p
   let s = case c of
         "+" -> SAdd
-        "-" -> SSub
+--        "-" -> SSub
         "*" -> SMul
-        "/" -> SDiv
+--        "/" -> SDiv
   return $ Symbol s
 
 parseIdentifier = do
@@ -71,8 +72,38 @@ parseExpr = do
   return $ SExprList e
 
 
+---------------
 
+data ArithC =
+  NumC Integer
+  | PlusC ArithC ArithC
+  | MultC ArithC ArithC
+--  | SubC ArithC ArithC
+  | DivC ArithC ArithC
+    deriving (Show)
+
+
+parseL (Atom a) = NumC a
+parseL (SExprList (x:y:z:cs)) = case x of
+  (Symbol a) -> case a of
+                  SAdd -> (PlusC (parseL y) (parseL z))
+                  SMul -> (MultC (parseL y) (parseL z))
+                  --SSub -> (SubC (parseL y) (parseL z))
+                  SDiv -> (DivC (parseL y) (parseL z))
+
+interpretL (PlusC x y) = (+) (interpretL x) (interpretL y)
+interpretL (MultC x y) = (*) (interpretL x) (interpretL y)
+--interpretL (SubC x y) = (-) (interpretL x) (interpretL y)
+interpretL (DivC x y) = (div) (interpretL x) (interpretL y)
+interpretL (NumC a) = a
 
 main :: IO ()
 main = do
-  putStrLn "main"
+  putStrLn "Enter the expression here"
+  expr <- getLine
+  unless (expr == "q") $ do
+    let pexpr = parse parseExpr "" expr
+    case pexpr of
+      Right x -> putStrLn $ show $ interpretL $ parseL x
+      Left x -> putStrLn $ "There was an error" ++ show x
+    main
