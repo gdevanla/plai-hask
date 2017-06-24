@@ -1,5 +1,6 @@
 module Chapter5 where
 
+import Data.List
 import Control.Monad
 import Text.Parsec.Prim
 import Text.Parsec.Token
@@ -16,6 +17,23 @@ data SExpr = Atom Integer
   | SIdent String
   | SExprList [SExpr]
   deriving (Show, Eq)
+
+
+pprintSExpr e = case e of
+  Atom i -> show i
+  Symbols s -> case s of
+                 SAdd -> "+"
+                 SSub -> "-"
+                 SMul -> "*"
+                 SDiv -> "/"
+                 Var s -> s
+  SIdent s -> s
+  SExprList sexpr -> "(" ++ ppList sexpr ++ ")"
+  where
+    ppList sexpr = let
+      x = map pprintSExpr sexpr
+      in
+      intercalate " " x
 
 plaiDef :: LanguageDef st
 plaiDef = emptyDef
@@ -87,6 +105,17 @@ data ExprC =
   | AppC Symbol ExprC
     deriving (Show)
 
+
+subst what for inexpr = case inexpr of
+  (NumC i) -> inexpr
+  (IdC s) -> case s of
+    Var s -> if s == for then what else inexpr
+    _ -> inexpr
+  (MultC a b) -> MultC (subst what for a) (subst what for b)
+  (PlusC a b) -> PlusC (subst what for a) (subst what for b)
+  (AppC f b) -> AppC f (subst what for b)
+
+
 data ArithS =
   NumS Integer
   | IdS Symbol
@@ -96,6 +125,15 @@ data ArithS =
   | AppS Symbol ArithS
   deriving Show
 
+
+pprintAST a = case a of
+  NumS x -> show x
+  IdS s -> show s
+  PlusS a b -> prntop "+" a b
+  MultS a b -> prntop "*" a b
+  AppS s a -> "(" ++ show s ++ pprintAST a ++ ")"
+  where
+    prntop c a b = "(" ++ c  ++ pprintAST a ++ " " ++ pprintAST b ++ ")"
 
 data FuncDefC = FuncDefC {name::Symbol, arg::Symbol, body::ExprC} deriving Show
 --data Appl = Appl {fun:: Symbol, args::ExprC} deriving Show
