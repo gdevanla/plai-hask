@@ -11,6 +11,6 @@ main = do
   unless (expr == "q") $ do
     let pexpr = parse parseExpr "" expr
     case pexpr of
-      Right x -> putStrLn $ show $ interpretExprC $ desugar $ parseArithS x
+      Right x -> putStrLn $ show $ interpretExprC (desugar $ parseArithS x) $ getFDef
       Left x -> putStrLn $ "There was an error" ++ show x
     main

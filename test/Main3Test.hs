@@ -48,11 +48,15 @@ test_pprint = testCaseInfo "test_pprint" $ do
 
 test_subst = testCaseInfo "test_subst" $ do
   let what = (AppC (Var "fn") (NumC 3))
-      for = "x"
+      for = Var "x"
       inexprs = [PlusC (IdC $ Var "x") (IdC $ Var "y")
                 , IdC $ Var "x"
                 , AppC (Var "fn") (PlusC (IdC $ Var "y") (IdC $ Var "x"))]
   return $ intercalate "\n" $ map (show . (subst what for)) $ inexprs
+
+test_interpretC = testCaseInfo "test_interpretC" $ do
+  let expr = (AppC (Var "test") (NumC 3))
+  return $ show $ interpretExprC expr $ getFDef
 
 
 

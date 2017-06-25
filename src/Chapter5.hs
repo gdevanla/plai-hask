@@ -109,7 +109,7 @@ data ExprC =
 subst what for inexpr = case inexpr of
   (NumC i) -> inexpr
   (IdC s) -> case s of
-    Var s -> if s == for then what else inexpr
+    Var s -> if Var s == for then what else inexpr
     _ -> inexpr
   (MultC a b) -> MultC (subst what for a) (subst what for b)
   (PlusC a b) -> PlusC (subst what for a) (subst what for b)
@@ -170,6 +170,12 @@ parseArithS (SExprList (x:xs)) = case x of
     mathOp f (x:y:[]) = f (parseArithS x) (parseArithS y)
     appOp f (x:[]) = f (parseArithS x)
 
-interpretExprC (PlusC x y) = (+) (interpretExprC x) (interpretExprC y)
-interpretExprC (MultC x y) = (*) (interpretExprC x) (interpretExprC y)
-interpretExprC (NumC a) = a
+getFDef = FuncDefC {name=Var "test", arg=Var "x", body=PlusC (IdC $ Var "x") (IdC $ Var "x")}
+
+interpretExprC (PlusC x y) fdef = (+) (interpretExprC x fdef) (interpretExprC y fdef)
+interpretExprC (MultC x y) fdef = (*) (interpretExprC x fdef) (interpretExprC y fdef)
+interpretExprC (NumC a) _ = a
+interpretExprC (AppC f a) fdef = let fdef = getFDef
+                                     expr = subst a (arg fdef) (body fdef)
+  in
+  (interpretExprC expr fdef)
