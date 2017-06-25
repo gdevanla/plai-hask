@@ -1,6 +1,7 @@
 module Chapter5 where
 
 import Data.List
+import qualified Data.Map.Strict as M
 import Control.Monad
 import Text.Parsec.Prim
 import Text.Parsec.Token
@@ -10,7 +11,7 @@ import Text.ParserCombinators.Parsec.Prim as P
 
 
 data Symbol = SAdd | SSub | SMul | SDiv | Var String
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord)
 
 data SExpr = Atom Integer
   | Symbols Symbol
@@ -172,10 +173,20 @@ parseArithS (SExprList (x:xs)) = case x of
 
 getFDef = FuncDefC {name=Var "test", arg=Var "x", body=PlusC (IdC $ Var "x") (IdC $ Var "x")}
 
+getFFDef = FuncDefC {
+  name=Var "ttest",
+  arg=Var "x",
+  body=(AppC
+        (Var "test") (AppC (Var "test") (IdC $ Var "x")))}
+
+allFuncCDefs = M.fromList [(name getFDef, getFDef), (name getFFDef, getFFDef)]
+
+interpretExprC :: ExprC -> M.Map Symbol FuncDefC -> Integer
 interpretExprC (PlusC x y) fdef = (+) (interpretExprC x fdef) (interpretExprC y fdef)
 interpretExprC (MultC x y) fdef = (*) (interpretExprC x fdef) (interpretExprC y fdef)
 interpretExprC (NumC a) _ = a
-interpretExprC (AppC f a) fdef = let fdef = getFDef
-                                     expr = subst a (arg fdef) (body fdef)
+interpretExprC (AppC f a) fdefs = let fdef = (M.!) fdefs f
+                                      expr = subst a (arg fdef) (body fdef)
   in
-  (interpretExprC expr fdef)
+  (interpretExprC expr fdefs)
+interpretExprC (IdC _) _ = error "Free Variable found."

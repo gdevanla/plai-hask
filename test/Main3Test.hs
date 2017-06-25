@@ -55,8 +55,8 @@ test_subst = testCaseInfo "test_subst" $ do
   return $ intercalate "\n" $ map (show . (subst what for)) $ inexprs
 
 test_interpretC = testCaseInfo "test_interpretC" $ do
-  let expr = (AppC (Var "test") (NumC 3))
-  return $ show $ interpretExprC expr $ getFDef
+  let expr = (AppC (Var "ttest") (NumC 3))
+  return $ show $ interpretExprC expr $ allFuncCDefs
 
 
 
