@@ -1,5 +1,6 @@
 module Main6Test where
 
+import qualified Data.Map as M
 import qualified Control.Exception as E
 import Data.Typeable
 import Control.Monad
@@ -57,3 +58,57 @@ test_subst = testCaseInfo "test_subst" $ do
 test_interpretC = testCaseInfo "test_interpretC_with_Env" $ do
   let expr = (AppC (Var "ttest") (NumC 3))
   return $ show $ interpretExprC expr emptyEnv allFuncCDefs
+
+
+
+-- (test (interp (plusC (numC 10) (appC 'const5 (numC 10)))
+--                      mt-env
+--                       (list (fdC 'const5 '_ (numC 5))))
+--         15)
+
+--   (test (interp (plusC (numC 10) (appC 'double (plusC (numC 1) (numC 2))))
+--                        mt-env
+--                         (list (fdC 'double 'x (plusC (idC 'x) (idC 'x)))))
+--           16)
+
+--   (test (interp (plusC (numC 10) (appC 'quadruple (plusC (numC 1) (numC 2))))
+--                        mt-env
+--                         (list (fdC 'quadruple 'x (appC 'double (appC 'double (idC 'x))))
+--                                              (fdC 'double 'x (plusC (idC 'x) (idC 'x)))))
+--           22)')')))')')')))'))))')'))))'))))'))))
+
+
+const_5 = FuncDefC {name=Var "const5", arg=Var "_", body=(NumC 5)}
+double_f = FuncDefC {name=Var "double", arg=Var "x", body=PlusC (IdC $ Var "x") (IdC $ Var "x")}
+quadrapule = FuncDefC {
+  name=Var "quadrapule",
+  arg=Var "x",
+  body=(AppC
+        (Var "double") (AppC (Var "double") (IdC $ Var "x")))}
+f1 = FuncDefC {name=Var "f1", arg=Var "x", body=AppC (Var "f2") (NumC 4)}
+f2 = FuncDefC {name=Var "f2", arg=Var "y", body=(PlusC (IdC $ Var "x") (IdC $ Var "y"))}
+
+functions_fixtures = M.fromList [
+  (name const_5, const_5),
+  (name double_f, double_f),
+  (name quadrapule, quadrapule),
+  (name f1, f1),
+  (name f2, f2)]
+
+interpreter_fixtures :: [(ExprC, Integer)]
+interpreter_fixtures = [
+  ((PlusC (NumC 10) (AppC (Var "const5") (NumC 10))),  15),
+  ((PlusC (NumC 10) (AppC (Var "double") (PlusC (NumC 1) (NumC 2)))), 16),
+  ((PlusC (NumC 10) (AppC (Var "quadrapule") (PlusC (NumC 1) (NumC 2)))), 22),
+  ((AppC (Var "f1") (NumC 3)), 7)
+  ]
+
+interpret_and_test expr answer = do
+  let actual_answer = (interpretExprC expr emptyEnv functions_fixtures)::Integer
+  assertEqual "check answer" answer actual_answer
+
+create_interpreter_test testNum (expr, answer) =
+  testCase (show testNum) $ interpret_and_test expr answer
+
+test_interpreter = testGroup "test_interpreter"
+  [create_interpreter_test x y | (x,y) <- zip [0..] interpreter_fixtures]

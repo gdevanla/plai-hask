@@ -1,3 +1,5 @@
+{-# LANGUAGE Strict #-}
+{-# LANGUAGE Strict #-}
 module Chapter6 where
 
 import Data.List
@@ -187,12 +189,16 @@ interpretExprC (MultC x y) env fdef = (*) (interpretExprC x env fdef) (interpret
 interpretExprC (NumC a) _ _ = a
 interpretExprC (AppC f a) env fdefs = let fdef = (M.!) fdefs f
                                           v = (interpretExprC a env fdefs)
-                                          new_env = M.insert (arg fdef) v env
+                                          new_env = M.insert (arg fdef) v emptyEnv
                                           result = interpretExprC (body fdef) new_env fdefs
   in
   result
-interpretExprC (IdC x) env _ = (M.!) env x
-
+interpretExprC (IdC x) env _ = let
+  value = (M.lookup) x env
+  in
+  case value of
+    Just x -> x
+    Nothing -> error $ show x ++ "not found in scope"
 
 type Binding = M.Map (Symbol) (Integer)
 
